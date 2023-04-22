@@ -14,13 +14,13 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.swing.*;
-import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
 public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardClientInterface {
     private JFrame frame;
     private JPanel panel;
+    private JLabel statusLabel;
     private BufferedImage image;
     private Graphics2D graphics;
     private WhiteboardServerInterface server;
@@ -185,6 +185,12 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         toolbar.setRollover(true);
+
+        statusLabel = new JLabel("Current Status: " + currentShape.toString());
+        toolbar.add(statusLabel);
+
+        toolbar.addSeparator();
+
         JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(e -> {
             try {
@@ -196,23 +202,43 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         toolbar.add(clearButton);
         frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
 
+        toolbar.addSeparator();
+
         JButton LineButton = new JButton("Line");
-        LineButton.addActionListener(e -> currentShape = DrawingShape.LINE);
+        LineButton.addActionListener(e -> {
+            currentShape = DrawingShape.LINE;
+            statusLabel.setText("Current shape: " + currentShape.toString());
+        });
         toolbar.add(LineButton);
         frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
 
+        toolbar.addSeparator();
+
         JButton CircleButton = new JButton("Circle");
-        CircleButton.addActionListener(e -> currentShape = DrawingShape.CIRCLE);
+        CircleButton.addActionListener(e -> {
+            currentShape = DrawingShape.CIRCLE;
+            statusLabel.setText("Current shape: " + currentShape.toString());
+        });
         toolbar.add(CircleButton);
         frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
 
+        toolbar.addSeparator();
+
         JButton ovalButton = new JButton("Oval");
-        ovalButton.addActionListener(e -> currentShape = DrawingShape.OVAL);
+        ovalButton.addActionListener(e -> {
+            currentShape = DrawingShape.OVAL;
+            statusLabel.setText("Current shape: " + currentShape.toString());
+        });        
         toolbar.add(ovalButton);
         frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
 
+        toolbar.addSeparator();
+
         JButton RectangleButton = new JButton("Rectangle");
-        RectangleButton.addActionListener(e -> currentShape = DrawingShape.RECTANGLE);
+        RectangleButton.addActionListener(e -> {
+            currentShape = DrawingShape.RECTANGLE;
+            statusLabel.setText("Current shape: " + currentShape.toString());
+        });
         toolbar.add(RectangleButton);
         frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
     }
