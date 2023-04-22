@@ -14,6 +14,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.swing.*;
+import java.awt.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -27,6 +28,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     private int startX, startY;
     private Shape tempShape = null;
     private boolean drawing = false;
+    private Color currentColor = Color.RED;
     private DrawingShape currentShape = DrawingShape.LINE;
 
     public enum DrawingShape {
@@ -49,6 +51,12 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         try {
             Registry registry = LocateRegistry.getRegistry("localhost");
             server = (WhiteboardServerInterface) registry.lookup("WhiteboardServer");
+            boolean connectionAllowed = server.requestConnection();
+            if (!connectionAllowed) {
+                JOptionPane.showMessageDialog(null, "Connection not allowed");
+                System.exit(0);
+            }
+
             server.addClient(this);
         } catch (Exception e) {
             e.printStackTrace();
@@ -60,19 +68,20 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         CreateToolbar();
         frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
 
+        CreateColorChooser();
+        frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+
         panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.drawImage(image, 0, 0, null);
-                // g2d.drawImage(image, 0, 0, null);
 
                 if (drawing && tempShape != null) {
-                    g2d.setColor(Color.BLACK);
+                    g2d.setColor(currentColor);
                     g2d.draw(tempShape);
                 }
-                // g2d.drawImage(image, 0, 0, null);
             }
         };
         
@@ -108,19 +117,19 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 try {
                     switch (currentShape) {
                         case LINE:
-                            server.broadcastDrawLine(startX, startY, x, y);
+                            server.broadcastDrawLine(startX, startY, x, y, currentColor.getRGB());
                             break;
                         case CIRCLE:
                             int diameter = Math.max(width, height);
                             topLeftX = startX < x ? startX : startX - diameter;
                             topLeftY = startY < y ? startY : startY - diameter;
-                            server.broadcastDrawCircle(topLeftX, topLeftY, diameter);
+                            server.broadcastDrawCircle(topLeftX, topLeftY, diameter, currentColor.getRGB());
                             break;
                         case RECTANGLE:
-                            server.broadcastDrawRectangle(topLeftX, topLeftY, width, height);
+                            server.broadcastDrawRectangle(topLeftX, topLeftY, width, height, currentColor.getRGB());
                             break;
                         case OVAL:
-                            server.broadcastDrawOval(topLeftX, topLeftY, width, height);
+                            server.broadcastDrawOval(topLeftX, topLeftY, width, height, currentColor.getRGB());
                             break;
                         default:
                             break;
@@ -134,6 +143,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             }
         });
 
+
+        // Preview the shape while drawing
         panel.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
@@ -148,7 +159,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                     switch (currentShape) {
                         case LINE:
                             try {
-                                server.broadcastDrawLine(startX, startY, x, y);
+                                server.broadcastDrawLine(startX, startY, x, y, currentColor.getRGB());
                             } catch (RemoteException remoteException) {
                                 remoteException.printStackTrace();
                             }
@@ -181,15 +192,23 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
     }
 
+    @Override
+    public void setCurrentColor(Color color) throws RemoteException {
+        currentColor = color;
+    }
+
+    // TOOL BAR
     private void CreateToolbar() {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         toolbar.setRollover(true);
+        toolbar.setLayout(new BorderLayout());
 
         statusLabel = new JLabel("Current Status: " + currentShape.toString());
-        toolbar.add(statusLabel);
+        toolbar.add(statusLabel, BorderLayout.WEST);
 
-        toolbar.addSeparator();
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setOpaque(false);    
 
         JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(e -> {
@@ -199,64 +218,93 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 remoteException.printStackTrace();
             }
         });
-        toolbar.add(clearButton);
-        frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
+        buttonPanel.add(clearButton);
 
-        toolbar.addSeparator();
+        // toolbar.addSeparator();
 
         JButton LineButton = new JButton("Line");
         LineButton.addActionListener(e -> {
             currentShape = DrawingShape.LINE;
             statusLabel.setText("Current shape: " + currentShape.toString());
         });
-        toolbar.add(LineButton);
-        frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
+        buttonPanel.add(LineButton);
 
-        toolbar.addSeparator();
+        // toolbar.addSeparator();
 
         JButton CircleButton = new JButton("Circle");
         CircleButton.addActionListener(e -> {
             currentShape = DrawingShape.CIRCLE;
             statusLabel.setText("Current shape: " + currentShape.toString());
         });
-        toolbar.add(CircleButton);
-        frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
+        buttonPanel.add(CircleButton);
 
-        toolbar.addSeparator();
+        // toolbar.addSeparator();
 
         JButton ovalButton = new JButton("Oval");
         ovalButton.addActionListener(e -> {
             currentShape = DrawingShape.OVAL;
             statusLabel.setText("Current shape: " + currentShape.toString());
         });        
-        toolbar.add(ovalButton);
-        frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
-
-        toolbar.addSeparator();
+        buttonPanel.add(ovalButton);
+        // toolbar.addSeparator();
 
         JButton RectangleButton = new JButton("Rectangle");
         RectangleButton.addActionListener(e -> {
             currentShape = DrawingShape.RECTANGLE;
             statusLabel.setText("Current shape: " + currentShape.toString());
         });
-        toolbar.add(RectangleButton);
-        frame.getContentPane().add(toolbar, java.awt.BorderLayout.NORTH);
+        buttonPanel.add(RectangleButton);
+
+        toolbar.add(buttonPanel, BorderLayout.CENTER);
+
+        frame.getContentPane().add(toolbar, BorderLayout.NORTH);
+    }
+
+    // COLOR CHOOSER
+    private void CreateColorChooser() {
+        JPanel colorPanel = new JPanel();
+        Color[] colors = {Color.BLACK, Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.GREEN, Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
+
+        for (Color color : colors) {
+            JButton colorButton = new JButton();
+            colorButton.setOpaque(true);
+            colorButton.setBackground(color);
+            colorButton.setPreferredSize(new Dimension(20, 20));
+            colorButton.addActionListener(e -> {
+                try {
+                    setCurrentColor(color);
+                } catch (RemoteException remoteException) {
+                    remoteException.printStackTrace();
+                }
+            });
+            colorPanel.add(colorButton);
+        }
+
+        JToolBar colorChooserToolbar = new JToolBar();
+        colorChooserToolbar.setFloatable(false);
+        colorChooserToolbar.setRollover(true);
+        colorChooserToolbar.add(colorPanel);
+        frame.getContentPane().add(colorChooserToolbar, BorderLayout.EAST);
     }
 
     @Override
-    public void draw(Shape shape) throws RemoteException {
+    public void draw(Shape shape, Color color) throws RemoteException {
         if (shape instanceof Line2D) {
             Line2D line = (Line2D) shape;
+            graphics.setColor(color);
             graphics.draw(line);
         } else if (shape instanceof Ellipse2D) {
             Ellipse2D ellipse = (Ellipse2D) shape;
             if (ellipse.getWidth() == ellipse.getHeight()) { // Circle
+                graphics.setColor(color);
                 graphics.drawOval((int) ellipse.getX(), (int) ellipse.getY(), (int) ellipse.getWidth(), (int) ellipse.getHeight());
             } else { // Oval
+                graphics.setColor(color);
                 graphics.drawOval((int) ellipse.getX(), (int) ellipse.getY(), (int) ellipse.getWidth(), (int) ellipse.getHeight());
             }
         } else if (shape instanceof Rectangle2D) {
             Rectangle2D rectangle = (Rectangle2D) shape;
+            graphics.setColor(color);
             graphics.drawRect((int) rectangle.getX(), (int) rectangle.getY(), (int) rectangle.getWidth(), (int) rectangle.getHeight());
         }
         panel.repaint();
@@ -267,7 +315,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
         for (Shape l : drawings) {
-            graphics.setColor(Color.BLACK);
+            graphics.setColor(currentColor);
             graphics.draw(l);
         }
         panel.repaint();
@@ -277,8 +325,25 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
     @Override
     public void receiveMessage(String message) throws RemoteException {
-        JOptionPane.showMessageDialog(frame, message);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                if (message.equals("You have been removed from the server")) {
+                    int result = JOptionPane.showOptionDialog(frame, message, "Disconnected", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+                    if (result == JOptionPane.OK_OPTION) {
+                        try {
+                            closeApplication();
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(frame, message);
+                }
+            }
+        });
     }
+    
 
     @Override
     public void clear() throws RemoteException {
@@ -286,6 +351,17 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
         panel.repaint();
     }
+
+    @Override
+    public void closeApplication() throws RemoteException {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                WhiteboardClient.this.frame.dispose();
+            }
+        });
+    }
+
 
     public static void main(String[] args) {
         try {
