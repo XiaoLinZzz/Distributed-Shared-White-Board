@@ -15,6 +15,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.swing.*;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardClientInterface {
@@ -65,11 +66,13 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 super.paintComponent(g);
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.drawImage(image, 0, 0, null);
+                // g2d.drawImage(image, 0, 0, null);
 
                 if (drawing && tempShape != null) {
                     g2d.setColor(Color.BLACK);
                     g2d.draw(tempShape);
                 }
+                // g2d.drawImage(image, 0, 0, null);
             }
         };
         
@@ -108,7 +111,10 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                             server.broadcastDrawLine(startX, startY, x, y);
                             break;
                         case CIRCLE:
-                            server.broadcastDrawCircle(topLeftX, topLeftY, width);
+                            int diameter = Math.max(width, height);
+                            topLeftX = startX < x ? startX : startX - diameter;
+                            topLeftY = startY < y ? startY : startY - diameter;
+                            server.broadcastDrawCircle(topLeftX, topLeftY, diameter);
                             break;
                         case RECTANGLE:
                             server.broadcastDrawRectangle(topLeftX, topLeftY, width, height);
@@ -231,7 +237,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     }
 
     @Override
-    public void renderDrawings(ArrayList<Shape> drawings) throws RemoteException {
+    public void renderDrawings(CopyOnWriteArrayList<Shape> drawings) throws RemoteException {
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
         for (Shape l : drawings) {

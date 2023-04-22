@@ -1,7 +1,7 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.awt.Shape;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public interface WhiteboardServerInterface extends Remote {
     void addClient(WhiteboardClientInterface client) throws RemoteException;
@@ -20,5 +20,5 @@ public interface WhiteboardServerInterface extends Remote {
 
     void broadcastDrawRectangle(int x, int y, int width, int height) throws RemoteException;
 
-    ArrayList<Shape> getDrawings() throws RemoteException;
+    CopyOnWriteArrayList<Shape> getDrawings() throws RemoteException;
 }

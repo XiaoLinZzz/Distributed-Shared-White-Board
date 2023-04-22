@@ -2,19 +2,20 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
 import java.awt.Shape;
 import java.awt.geom.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 // import java.awt.*;
 
 
 public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardServerInterface {
 
-    private ArrayList<WhiteboardClientInterface> clients;
-    private ArrayList<Shape> drawings = new ArrayList<>();
+    private CopyOnWriteArrayList<WhiteboardClientInterface> clients;
+    private CopyOnWriteArrayList<Shape> drawings;
 
     public WhiteboardServer() throws RemoteException {
-        clients = new ArrayList<>();
+        clients = new CopyOnWriteArrayList<>();
+        drawings = new CopyOnWriteArrayList<>();
     }
 
     public void start() {
@@ -55,6 +56,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         drawings.add(circle);
         for (WhiteboardClientInterface client : clients) {
             client.draw(circle);
+            client.renderDrawings(drawings);
         }
     }
     
@@ -64,6 +66,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         drawings.add(oval);
         for (WhiteboardClientInterface client : clients) {
             client.draw(oval);
+            client.renderDrawings(drawings);
         }
     }
     
@@ -73,11 +76,12 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         drawings.add(rectangle);
         for (WhiteboardClientInterface client : clients) {
             client.draw(rectangle);
+            client.renderDrawings(drawings);
         }
     }
     
     @Override
-    public ArrayList<Shape> getDrawings() throws RemoteException {
+    public CopyOnWriteArrayList<Shape> getDrawings() throws RemoteException {
         return drawings;
     }
     
