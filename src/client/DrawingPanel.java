@@ -10,7 +10,7 @@ import java.awt.image.BufferedImage;
 import java.rmi.RemoteException;
 import javax.swing.JPanel;
 
-import WhiteboardClient;
+import server.WhiteboardServerInterface;
 
 public class DrawingPanel extends JPanel {
     private WhiteboardServerInterface server;

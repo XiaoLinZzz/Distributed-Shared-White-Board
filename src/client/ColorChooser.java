@@ -10,7 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
 
-import WhiteboardClient;
+import server.WhiteboardServerInterface;
 
 public class ColorChooser extends JToolBar {
     private WhiteboardServerInterface server;

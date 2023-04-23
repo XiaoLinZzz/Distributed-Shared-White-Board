@@ -1,3 +1,4 @@
+package server;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -8,6 +9,9 @@ import javax.swing.*;
 import java.awt.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+
+import client.ColoredShape;
+import client.WhiteboardClientInterface;
 
 
 public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardServerInterface {
