@@ -199,17 +199,17 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             @Override
             public void keyTyped(KeyEvent e) {
                 if (textInputMode) {
+                    String text = String.valueOf(e.getKeyChar());
                     try {
-                        server.broadcastDrawText(Character.toString(e.getKeyChar()), startX, startY, currentColor.getRGB());
-                        startX += graphics.getFontMetrics().charWidth(e.getKeyChar());
+                        server.broadcastDrawText(text, startX, startY, currentColor.getRGB());
+                        startX += graphics.getFontMetrics().stringWidth(text);
                     } catch (RemoteException remoteException) {
                         remoteException.printStackTrace();
                     }
                 }
             }
-            
         });
-        
+           
  
         // Preview the shape while drawing
         panel.addMouseMotionListener(new MouseAdapter() {
