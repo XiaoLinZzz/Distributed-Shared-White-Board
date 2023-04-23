@@ -453,6 +453,15 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                             e.printStackTrace();
                         }
                     }
+                } else if (message.equals("Server has been closed")){
+                    int result = JOptionPane.showOptionDialog(frame, message, "Disconnected", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+                    if (result == JOptionPane.OK_OPTION) {
+                        try {
+                            closeApplication();
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 } else {
                     JOptionPane.showMessageDialog(frame, message);
                 }

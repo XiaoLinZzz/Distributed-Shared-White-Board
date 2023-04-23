@@ -87,7 +87,9 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                 for (WhiteboardClientInterface client : clients) {
                     try {
-                        client.closeApplication();
+                        // client.closeApplication();
+                        client.receiveMessage("Server has been closed");
+                        
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
