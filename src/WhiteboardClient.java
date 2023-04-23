@@ -91,7 +91,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 }
             }
         };
-        panel.setPreferredSize(new java.awt.Dimension(600, 400));
+        panel.setPreferredSize(new java.awt.Dimension(800, 400));
 
         JPanel drawingPanel = new JPanel();
         drawingPanel.setLayout(new BoxLayout(drawingPanel, BoxLayout.Y_AXIS));
@@ -107,7 +107,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
         // splitPane.setResizeWeight(0.75);
-        splitPane.setDividerLocation(500);
+        splitPane.setDividerLocation(650);
         frame.setContentPane(splitPane);
         frame.pack();
         frame.setVisible(true);
