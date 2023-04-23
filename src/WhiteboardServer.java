@@ -87,7 +87,6 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
                 for (WhiteboardClientInterface client : clients) {
                     try {
-                        // client.serverClose();
                         client.closeApplication();
                     } catch (RemoteException e) {
                         e.printStackTrace();
@@ -211,13 +210,26 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         timer.start();
     }
     
-    @Override
-    public void broadcastChatMessage(String message) throws RemoteException {
-        System.out.println("Broadcasting chat message: " + message);
+    // @Override
+    // public void broadcastChatMessage(String message) throws RemoteException {
+    //     System.out.println("Broadcasting chat message: " + message);
 
+    //     for (WhiteboardClientInterface client : clients) {
+    //         try {
+    //             client.receiveChatMessage(message);
+    //         } catch (RemoteException e) {
+    //             e.printStackTrace();
+    //         }
+    //     }
+    // }
+
+    @Override
+    public void addChatMessage(String userName, String message) throws RemoteException {
+        System.out.println("Adding chat message: " + message);
+        chat.add(userName + ": " + message);
         for (WhiteboardClientInterface client : clients) {
             try {
-                client.receiveChatMessage(message);
+                client.renderChatMessages(chat);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }

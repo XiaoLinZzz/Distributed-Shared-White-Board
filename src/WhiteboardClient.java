@@ -234,7 +234,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 String message = chatField.getText().trim();
                 if (!message.isEmpty()) {
                     try {
-                        server.broadcastChatMessage(message);
+                        renderChatMessages(message);
                         chatField.setText("");
                     } catch (RemoteException remoteException) {
                         remoteException.printStackTrace();
@@ -461,6 +461,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 WhiteboardClient.this.frame.dispose();
             }
         });
+
+        System.exit(0);
     }
 
     @Override
@@ -468,16 +470,29 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         return true;
     }
 
-
     @Override
-    public void receiveChatMessage(String message) throws RemoteException {
+    public void renderChatMessages(CopyOnWriteArrayList<String> messages) throws RemoteException {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                chatArea.append(message + "\n");
+                chatArea.setText("");
+                for (String message : messages) {
+                    chatArea.append(message + "\n");
+                }
             }
         });
     }
+
+
+    // @Override
+    // public void receiveChatMessage(String message) throws RemoteException {
+    //     SwingUtilities.invokeLater(new Runnable() {
+    //         @Override
+    //         public void run() {
+    //             chatArea.append(message + "\n");
+    //         }
+    //     });
+    // }
 
     public static void main(String[] args) {
         if (args.length < 3) {

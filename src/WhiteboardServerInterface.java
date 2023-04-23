@@ -24,5 +24,7 @@ public interface WhiteboardServerInterface extends Remote {
     
     boolean requestConnection(String userName) throws RemoteException;
 
-    void broadcastChatMessage(String message) throws RemoteException;
+    // void broadcastChatMessage(String message) throws RemoteException;
+
+    void addChatMessage(String userName, String message) throws RemoteException;
 }

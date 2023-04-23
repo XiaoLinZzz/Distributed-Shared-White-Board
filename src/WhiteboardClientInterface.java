@@ -21,5 +21,7 @@ public interface WhiteboardClientInterface extends Remote {
 
     boolean ping() throws RemoteException;
 
-    void receiveChatMessage(String message) throws RemoteException;
+    // void receiveChatMessage(String message) throws RemoteException;
+
+    void renderChatMessages(CopyOnWriteArrayList<String> chatMessages) throws RemoteException;
 }
