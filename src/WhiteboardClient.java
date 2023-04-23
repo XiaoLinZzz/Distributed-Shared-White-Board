@@ -270,6 +270,9 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             colorButton.setOpaque(true);
             colorButton.setBackground(color);
             colorButton.setPreferredSize(new Dimension(20, 20));
+
+            colorButton.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
+            
             colorButton.addActionListener(e -> {
                 try {
                     setCurrentColor(color);
@@ -362,6 +365,10 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
     }
 
+    @Override
+    public boolean ping() throws RemoteException {
+        return true;
+    }
 
     public static void main(String[] args) {
         try {

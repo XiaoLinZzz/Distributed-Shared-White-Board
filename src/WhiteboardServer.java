@@ -29,6 +29,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             registry.bind("WhiteboardServer", this);
             System.out.println("Server started");
             createServerGUI();
+            checkClientsStatus();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -171,6 +172,27 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         }
     }
 
+    private void checkClientsStatus() {
+        Timer timer = new Timer(500, e -> {
+            for (int i = 0; i < clients.size(); i++) {
+                WhiteboardClientInterface client = clients.get(i);
+                try {
+                    if (!client.ping()) {
+                        removeClient(client);
+                    }
+                } catch (RemoteException ex) {
+                    try {
+                        removeClient(client);
+                    } catch (RemoteException rex) {
+                        rex.printStackTrace();
+                    }
+                }
+            }
+        });
+        timer.setInitialDelay(0);
+        timer.start();
+    }
+    
     
 
     public static void main(String[] args) {

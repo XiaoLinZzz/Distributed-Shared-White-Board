@@ -23,4 +23,5 @@ public interface WhiteboardServerInterface extends Remote {
     CopyOnWriteArrayList<Shape> getDrawings() throws RemoteException;
     
     boolean requestConnection() throws RemoteException;
+    
 }

@@ -18,4 +18,5 @@ public interface WhiteboardClientInterface extends Remote {
 
     void setCurrentColor(Color color) throws RemoteException;
 
+    boolean ping() throws RemoteException;
 }
