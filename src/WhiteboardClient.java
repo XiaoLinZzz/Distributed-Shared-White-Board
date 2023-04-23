@@ -89,6 +89,14 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                     g2d.setColor(currentColor);
                     g2d.draw(tempShape);
                 }
+
+                // if (currentShape == DrawingShape.TEXT) {
+                //     for (Drawing drawing : drawings) {
+                //         if (drawing instanceof Text2D) {
+                //             ((Text2D) drawing).drawText(g2d);
+                //         }
+                //     }
+                // }
             }
         };
         panel.setPreferredSize(new java.awt.Dimension(800, 400));
@@ -302,28 +310,6 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     @Override
     public void setCurrentColor(Color color) throws RemoteException {
         currentColor = color;
-    }
-
-    private String colorToString(Color color) {
-        if (color.equals(Color.BLACK)) return "Black";
-        if (color.equals(Color.BLUE)) return "Blue";
-        if (color.equals(Color.CYAN)) return "Cyan";
-        if (color.equals(Color.DARK_GRAY)) return "Dark Gray";
-        if (color.equals(Color.GRAY)) return "Gray";
-        if (color.equals(Color.GREEN)) return "Green";
-        if (color.equals(Color.LIGHT_GRAY)) return "Light Gray";
-        if (color.equals(Color.MAGENTA)) return "Magenta";
-        if (color.equals(Color.ORANGE)) return "Orange";
-        if (color.equals(Color.PINK)) return "Pink";
-        if (color.equals(Color.RED)) return "Red";
-        if (color.equals(Color.WHITE)) return "White";
-        if (color.equals(Color.YELLOW)) return "Yellow";
-        if (color.equals(new Color(128, 0, 128))) return "Purple";
-        if (color.equals(new Color(0, 128, 128))) return "Teal";
-        if (color.equals(new Color(128, 128, 0))) return "Olive";
-
-
-        return "RGB(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")";
     }
 
     // TOOL BAR
@@ -575,6 +561,28 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 e.printStackTrace();
             }
         }
+    }
+
+    private String colorToString(Color color) {
+        if (color.equals(Color.BLACK)) return "Black";
+        if (color.equals(Color.BLUE)) return "Blue";
+        if (color.equals(Color.CYAN)) return "Cyan";
+        if (color.equals(Color.DARK_GRAY)) return "Dark Gray";
+        if (color.equals(Color.GRAY)) return "Gray";
+        if (color.equals(Color.GREEN)) return "Green";
+        if (color.equals(Color.LIGHT_GRAY)) return "Light Gray";
+        if (color.equals(Color.MAGENTA)) return "Magenta";
+        if (color.equals(Color.ORANGE)) return "Orange";
+        if (color.equals(Color.PINK)) return "Pink";
+        if (color.equals(Color.RED)) return "Red";
+        if (color.equals(Color.WHITE)) return "White";
+        if (color.equals(Color.YELLOW)) return "Yellow";
+        if (color.equals(new Color(128, 0, 128))) return "Purple";
+        if (color.equals(new Color(0, 128, 128))) return "Teal";
+        if (color.equals(new Color(128, 128, 0))) return "Olive";
+
+
+        return "RGB(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")";
     }
 
     public static void main(String[] args) {
