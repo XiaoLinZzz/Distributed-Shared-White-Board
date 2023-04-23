@@ -31,9 +31,11 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     private JTextField chatField;
     private JPanel chatPanel;
     private String userName;
+    private boolean textInputMode = false;
     private boolean serverRunning = true;
 
     public enum DrawingShape {
+        TEXT,
         LINE,
         CIRCLE,
         OVAL,
@@ -50,23 +52,22 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
     }
 
-    public void start() {
+    public void start(String serverIPAddress, int serverPort) {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost");
+            Registry registry = LocateRegistry.getRegistry(serverIPAddress, serverPort);
             server = (WhiteboardServerInterface) registry.lookup("WhiteboardServer");
+
             boolean connectionAllowed = server.requestConnection(userName);
-            if (!connectionAllowed) {
-                try {
-                    connectionAllowed = server.requestConnection(userName);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            if (connectionAllowed) {
+                server.addClient(this, userName);
+            } else {
+                JOptionPane.showMessageDialog(null, "Connection not allowed");
+                return;
             }
 
-            server.addClient(this, userName);
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }     
 
         frame = new JFrame("Whiteboard Client");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -98,6 +99,10 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         drawingPanel.add(colorChooser);
         drawingPanel.add(panel);
 
+        // inputTextField = new JTextField();
+        // inputTextField.setVisible(false);
+        // drawingPanel.add(inputTextField);   
+
         createChat();
         
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
@@ -122,15 +127,25 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                startX = e.getX();
-                startY = e.getY();
-                drawing = true;
+                if (textInputMode) {
+                    startX = e.getX();
+                    startY = e.getY();
+                    panel.requestFocusInWindow();
+                } else {
+                    if (!serverRunning || currentShape == null) {
+                        return;
+                    }
+
+                    startX = e.getX();
+                    startY = e.getY();
+                    drawing = true;
+                }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
 
-                if (!serverRunning) {
+                if (!serverRunning || currentShape == null) {
                     return;
                 }
 
@@ -171,11 +186,31 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             }
         });
 
-
+        
+        panel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+                if (textInputMode) {
+                    try {
+                        server.broadcastDrawText(Character.toString(e.getKeyChar()), startX, startY, currentColor.getRGB());
+                        startX += graphics.getFontMetrics().charWidth(e.getKeyChar());
+                    } catch (RemoteException remoteException) {
+                        remoteException.printStackTrace();
+                    }
+                }
+            }
+            
+        });
+        
+ 
         // Preview the shape while drawing
         panel.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
+                if (currentShape == DrawingShape.TEXT) {
+                    return;
+                }
+
                 int x = e.getX();
                 int y = e.getY();
                 int width = Math.abs(x - startX);
@@ -316,6 +351,19 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
         // toolbar.addSeparator();
 
+        JButton textButton = new JButton("Text");
+        textButton.addActionListener(e -> {
+            textInputMode = !textInputMode; // Toggle text input mode
+            if (textInputMode) {
+                currentShape = null;
+                statusLabel.setText("Current Status: TEXT" + " | Current Color: " + colorToString(currentColor));
+            } else {
+                statusLabel.setText("Current Status: NONE" + " | Current Color: " + colorToString(currentColor));
+            }
+        });
+        buttonPanel.add(textButton);
+        
+
         JButton LineButton = new JButton("Line");
         LineButton.addActionListener(e -> {
             currentShape = DrawingShape.LINE;
@@ -358,7 +406,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
     private void setCurrentColorStatus(Color color) {
         currentColor = color;
-        statusLabel.setText("Current shape: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
+        String shapeString = (currentShape != null) ? currentShape.toString() : "No Shape Selected";
+        statusLabel.setText("Current shape: " + shapeString + " | Current Color: " + colorToString(currentColor));
     }
 
     // COLOR CHOOSER
@@ -420,6 +469,11 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             Rectangle2D rectangle = (Rectangle2D) shape;
             graphics.setColor(color);
             graphics.drawRect((int) rectangle.getX(), (int) rectangle.getY(), (int) rectangle.getWidth(), (int) rectangle.getHeight());
+        } else if (shape instanceof Text2D) {
+            Text2D text = (Text2D) shape;
+            graphics.setColor(color);
+            graphics.setFont(new Font("Arial", Font.PLAIN, 20));
+            graphics.drawString(text.getText(), (int) text.getX(), (int) text.getY());
         }
         panel.repaint();
     }
@@ -468,7 +522,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             }
         });
     }
-    
+        
 
     @Override
     public void clear() throws RemoteException {
@@ -541,7 +595,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     
         try {
             WhiteboardClient client = new WhiteboardClient(serverIPAddress, serverPort, username);
-            client.start();
+            client.start(serverIPAddress, serverPort);
         } catch (Exception e) {
             e.printStackTrace();
         }

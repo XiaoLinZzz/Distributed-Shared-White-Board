@@ -18,6 +18,8 @@ public interface WhiteboardServerInterface extends Remote {
 
     void broadcastDrawOval(int x, int y, int width, int height, int color) throws RemoteException;
 
+    void broadcastDrawText(String text, int x, int y, int color) throws RemoteException;
+
     void broadcastDrawRectangle(int x, int y, int width, int height, int color) throws RemoteException;
 
     CopyOnWriteArrayList<ColoredShape> getDrawings() throws RemoteException;

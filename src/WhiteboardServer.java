@@ -18,15 +18,15 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     DefaultListModel<String> listModel = new DefaultListModel<>();
 
 
-    public WhiteboardServer() throws RemoteException {
+    public WhiteboardServer(String serverIPAddress, int serverPort, String userName) throws RemoteException {
         clients = new CopyOnWriteArrayList<>();
         drawings = new CopyOnWriteArrayList<>();
         chat = new CopyOnWriteArrayList<>();
     }
 
-    public void start() {
+    public void start(int serverPort) {
         try {
-            Registry registry = LocateRegistry.createRegistry(1099);
+            Registry registry = LocateRegistry.createRegistry(serverPort);
             registry.bind("WhiteboardServer", this);
             System.out.println("Server started");
             createServerGUI();
@@ -89,7 +89,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
                     try {
                         // client.closeApplication();
                         client.receiveMessage("Server has been closed");
-                        
+
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -125,6 +125,19 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             listModel.remove(index);
         }
     }
+
+    @Override
+    public void broadcastDrawText(String text, int x, int y, int color) throws RemoteException {
+        Text2D text2D = new Text2D(text, x, y);
+        ColoredShape coloredText = new ColoredShape(text2D, new Color(color));
+        coloredText.setText(text);
+        drawings.add(coloredText);
+        for (WhiteboardClientInterface client : clients) {
+            client.draw(coloredText);
+            client.renderDrawings(drawings);
+        }
+    }
+    
 
     @Override
     public void broadcastDrawLine(int x1, int y1, int x2, int y2, int color) throws RemoteException {
@@ -244,10 +257,19 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     }
 
     public static void main(String[] args) {
+        if (args.length < 3) {
+            System.out.println("Usage: java CreateWhiteBoard <serverIPAddress> <port> <username>");
+            System.exit(1);
+        }
+
+        String serverIPAddress = args[0];
+        int port = Integer.parseInt(args[1]);
+        String userName = args[2];
+
         try {
-            WhiteboardServer server = new WhiteboardServer();
+            WhiteboardServer server = new WhiteboardServer(serverIPAddress, port, userName);
             System.out.println("Whiteboard server is running...");
-            server.start();
+            server.start(port);
         } catch (Exception e) {
             e.printStackTrace();
         }
