@@ -101,13 +101,20 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         createChat();
         
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
-        splitPane.setResizeWeight(0.75);
+        // splitPane.setResizeWeight(0.75);
+        splitPane.setDividerLocation(500);
         frame.setContentPane(splitPane);
         frame.pack();
         frame.setVisible(true);
 
         try {
             renderDrawings(server.getDrawings());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            renderChatMessages(server.getChat());
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -223,30 +230,38 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JScrollPane chatAreaScrollPane = new JScrollPane(chatArea);
 
         chatField = new JTextField();
+
+        JLabel chatTitle = new JLabel("Chat Room");
+        chatTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        // chatTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
+
+        JButton sendButton = new JButton("Send");
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+    
+
         chatField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
-                if (!serverRunning) {
-                    return;
-                }
-
-                String message = chatField.getText().trim();
-                if (!message.isEmpty()) {
-                    try {
-                        renderChatMessages(message);
-                        chatField.setText("");
-                    } catch (RemoteException remoteException) {
-                        remoteException.printStackTrace();
-                    }
-                }
+                sendMessage();
             }
         });
 
         chatPanel = new JPanel();
         chatPanel.setLayout(new BorderLayout());
+        chatPanel.add(chatTitle, BorderLayout.NORTH);
         chatPanel.add(chatAreaScrollPane, BorderLayout.CENTER);
-        chatPanel.add(chatField, BorderLayout.SOUTH);
+    
+        // Create a panel for the chat field and send button
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(chatField, BorderLayout.CENTER);
+        bottomPanel.add(sendButton, BorderLayout.EAST);
+    
+        chatPanel.add(bottomPanel, BorderLayout.SOUTH);
     }
 
     @Override
@@ -483,16 +498,21 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
     }
 
+    private void sendMessage() {
+        if (!serverRunning) {
+            return;
+        }
 
-    // @Override
-    // public void receiveChatMessage(String message) throws RemoteException {
-    //     SwingUtilities.invokeLater(new Runnable() {
-    //         @Override
-    //         public void run() {
-    //             chatArea.append(message + "\n");
-    //         }
-    //     });
-    // }
+        String message = chatField.getText().trim();
+        if (!message.isEmpty()) {
+            try {
+                server.addChatMessage(userName, message);
+                chatField.setText("");
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public static void main(String[] args) {
         if (args.length < 3) {

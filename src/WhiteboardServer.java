@@ -172,6 +172,11 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     public CopyOnWriteArrayList<ColoredShape> getDrawings() throws RemoteException {
         return drawings;
     }
+
+    @Override
+    public CopyOnWriteArrayList<String> getChat() throws RemoteException {
+        return chat;
+    }
     
 
     @Override
