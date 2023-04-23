@@ -4,7 +4,7 @@ import java.rmi.RemoteException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public interface WhiteboardServerInterface extends Remote {
-    void addClient(WhiteboardClientInterface client) throws RemoteException;
+    void addClient(WhiteboardClientInterface client, String userName) throws RemoteException;
 
     void removeClient(WhiteboardClientInterface client) throws RemoteException;
 
@@ -22,5 +22,7 @@ public interface WhiteboardServerInterface extends Remote {
 
     CopyOnWriteArrayList<ColoredShape> getDrawings() throws RemoteException;
     
-    boolean requestConnection() throws RemoteException;
+    boolean requestConnection(String userName) throws RemoteException;
+
+    void broadcastChatMessage(String message) throws RemoteException;
 }

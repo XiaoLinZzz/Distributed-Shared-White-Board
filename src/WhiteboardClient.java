@@ -1,10 +1,3 @@
-
-
-import java.awt.Color;
-import java.awt.Shape;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
@@ -18,6 +11,7 @@ import java.rmi.server.UnicastRemoteObject;
 import javax.swing.*;
 
 import java.awt.*;
+import java.awt.event.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -33,6 +27,11 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     private boolean drawing = false;
     private Color currentColor = Color.BLACK;
     private DrawingShape currentShape = DrawingShape.LINE;
+    private JTextArea chatArea;
+    private JTextField chatField;
+    private JPanel chatPanel;
+    private String userName;
+    private boolean serverRunning = true;
 
     public enum DrawingShape {
         LINE,
@@ -41,8 +40,9 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         RECTANGLE;
     }
 
-    public WhiteboardClient() throws RemoteException {
+    public WhiteboardClient(String serverIPAddress, int serverPort, String userName) throws RemoteException {
         super();
+        this.userName = userName;
         image = new BufferedImage(600, 400, BufferedImage.TYPE_INT_RGB);
         graphics = (Graphics2D) image.getGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -54,13 +54,16 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         try {
             Registry registry = LocateRegistry.getRegistry("localhost");
             server = (WhiteboardServerInterface) registry.lookup("WhiteboardServer");
-            boolean connectionAllowed = server.requestConnection();
+            boolean connectionAllowed = server.requestConnection(userName);
             if (!connectionAllowed) {
-                JOptionPane.showMessageDialog(null, "Connection not allowed");
-                System.exit(0);
+                try {
+                    connectionAllowed = server.requestConnection(userName);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
-            server.addClient(this);
+            server.addClient(this, userName);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -68,11 +71,11 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         frame = new JFrame("Whiteboard Client");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        CreateToolbar();
-        frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+        JToolBar toolbar = CreateToolbar();
+        // frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
 
-        CreateColorChooser();
-        frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
+        JToolBar colorChooser = CreateColorChooser();
+        // frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.Y_AXIS));
 
         panel = new JPanel() {
             @Override
@@ -87,9 +90,19 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 }
             }
         };
-        
         panel.setPreferredSize(new java.awt.Dimension(600, 400));
-        frame.getContentPane().add(panel);
+
+        JPanel drawingPanel = new JPanel();
+        drawingPanel.setLayout(new BoxLayout(drawingPanel, BoxLayout.Y_AXIS));
+        drawingPanel.add(toolbar);
+        drawingPanel.add(colorChooser);
+        drawingPanel.add(panel);
+
+        createChat();
+        
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
+        splitPane.setResizeWeight(0.75);
+        frame.setContentPane(splitPane);
         frame.pack();
         frame.setVisible(true);
 
@@ -109,6 +122,11 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
             @Override
             public void mouseReleased(MouseEvent e) {
+
+                if (!serverRunning) {
+                    return;
+                }
+
                 drawing = false;
                 int x = e.getX();
                 int y = e.getY();
@@ -195,6 +213,42 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
     }
 
+
+    // CHAT
+    private void createChat() {
+        chatArea = new JTextArea();
+        chatArea.setEditable(false);
+        chatArea.setLineWrap(true);
+        chatArea.setWrapStyleWord(true);
+        JScrollPane chatAreaScrollPane = new JScrollPane(chatArea);
+
+        chatField = new JTextField();
+        chatField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                if (!serverRunning) {
+                    return;
+                }
+
+                String message = chatField.getText().trim();
+                if (!message.isEmpty()) {
+                    try {
+                        server.broadcastChatMessage(message);
+                        chatField.setText("");
+                    } catch (RemoteException remoteException) {
+                        remoteException.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        chatPanel = new JPanel();
+        chatPanel.setLayout(new BorderLayout());
+        chatPanel.add(chatAreaScrollPane, BorderLayout.CENTER);
+        chatPanel.add(chatField, BorderLayout.SOUTH);
+    }
+
     @Override
     public void setCurrentColor(Color color) throws RemoteException {
         currentColor = color;
@@ -223,7 +277,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     }
 
     // TOOL BAR
-    private void CreateToolbar() {
+    private JToolBar CreateToolbar() {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         toolbar.setRollover(true);
@@ -283,6 +337,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         toolbar.add(buttonPanel, BorderLayout.CENTER);
 
         frame.getContentPane().add(toolbar, BorderLayout.NORTH);
+
+        return toolbar;
     }
 
     private void setCurrentColorStatus(Color color) {
@@ -291,7 +347,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     }
 
     // COLOR CHOOSER
-    private void CreateColorChooser() {
+    private JToolBar CreateColorChooser() {
         JPanel colorPanel = new JPanel();
         Color Purple = new Color(128, 0, 128);
         Color Teal = new Color(0, 128, 128);
@@ -323,6 +379,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         colorChooserToolbar.setRollover(true);
         colorChooserToolbar.add(colorPanel);
         frame.getContentPane().add(colorChooserToolbar, BorderLayout.EAST);
+
+        return colorChooserToolbar;
     }
 
     @Override
@@ -410,12 +468,38 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         return true;
     }
 
+
+    @Override
+    public void receiveChatMessage(String message) throws RemoteException {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                chatArea.append(message + "\n");
+            }
+        });
+    }
+
     public static void main(String[] args) {
+        if (args.length < 3) {
+            System.out.println("Usage: java JoinWhiteBoard <serverIPAddress> <serverPort> <username>");
+            return;
+        }
+    
+        String serverIPAddress = args[0];
+        int serverPort;
         try {
-            WhiteboardClient client = new WhiteboardClient();
+            serverPort = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            System.out.println("Error: Invalid server port");
+            return;
+        }
+        String username = args[2];
+    
+        try {
+            WhiteboardClient client = new WhiteboardClient(serverIPAddress, serverPort, username);
             client.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-}    
+}

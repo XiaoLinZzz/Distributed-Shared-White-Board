@@ -14,12 +14,14 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
 
     private CopyOnWriteArrayList<WhiteboardClientInterface> clients;
     private CopyOnWriteArrayList<ColoredShape> drawings;
+    private CopyOnWriteArrayList<String> chat;
     DefaultListModel<String> listModel = new DefaultListModel<>();
-    private int clientId = 0;
+
 
     public WhiteboardServer() throws RemoteException {
         clients = new CopyOnWriteArrayList<>();
         drawings = new CopyOnWriteArrayList<>();
+        chat = new CopyOnWriteArrayList<>();
     }
 
     public void start() {
@@ -79,23 +81,36 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
                 }
             }
         });
+
+        serverFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                for (WhiteboardClientInterface client : clients) {
+                    try {
+                        // client.serverClose();
+                        client.closeApplication();
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
     }    
 
-    public boolean displayConnectionRequest() {
-        int response = JOptionPane.showConfirmDialog(null, "A client wants to join. Do you accept?", "Connection Request", JOptionPane.YES_NO_OPTION);
+    public boolean displayConnectionRequest(String userName) {
+        int response = JOptionPane.showConfirmDialog(null, userName + " wants to join. Do you accept?", "Connection Request", JOptionPane.YES_NO_OPTION);
         return response == JOptionPane.YES_OPTION;
     }
 
     @Override
-    public boolean requestConnection() throws RemoteException {
-        return displayConnectionRequest();
+    public boolean requestConnection(String userName) throws RemoteException {
+        return displayConnectionRequest(userName);
     }
 
     @Override
-    public void addClient(WhiteboardClientInterface client) throws RemoteException {
+    public void addClient(WhiteboardClientInterface client, String userName) throws RemoteException {
         clients.add(client);
-        String clientName = "Client " + clientId;
-        clientId++;
+        String clientName = userName;
         System.out.println(clientName + " added");
         listModel.addElement(clientName);
     }
@@ -196,7 +211,18 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         timer.start();
     }
     
-    
+    @Override
+    public void broadcastChatMessage(String message) throws RemoteException {
+        System.out.println("Broadcasting chat message: " + message);
+
+        for (WhiteboardClientInterface client : clients) {
+            try {
+                client.receiveChatMessage(message);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public static void main(String[] args) {
         try {
