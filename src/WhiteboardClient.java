@@ -28,7 +28,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     private int startX, startY;
     private Shape tempShape = null;
     private boolean drawing = false;
-    private Color currentColor = Color.RED;
+    private Color currentColor = Color.BLACK;
     private DrawingShape currentShape = DrawingShape.LINE;
 
     public enum DrawingShape {
@@ -197,6 +197,28 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         currentColor = color;
     }
 
+    private String colorToString(Color color) {
+        if (color.equals(Color.BLACK)) return "Black";
+        if (color.equals(Color.BLUE)) return "Blue";
+        if (color.equals(Color.CYAN)) return "Cyan";
+        if (color.equals(Color.DARK_GRAY)) return "Dark Gray";
+        if (color.equals(Color.GRAY)) return "Gray";
+        if (color.equals(Color.GREEN)) return "Green";
+        if (color.equals(Color.LIGHT_GRAY)) return "Light Gray";
+        if (color.equals(Color.MAGENTA)) return "Magenta";
+        if (color.equals(Color.ORANGE)) return "Orange";
+        if (color.equals(Color.PINK)) return "Pink";
+        if (color.equals(Color.RED)) return "Red";
+        if (color.equals(Color.WHITE)) return "White";
+        if (color.equals(Color.YELLOW)) return "Yellow";
+        if (color.equals(new Color(128, 0, 128))) return "Purple";
+        if (color.equals(new Color(0, 128, 128))) return "Teal";
+        if (color.equals(new Color(128, 128, 0))) return "Olive";
+
+
+        return "RGB(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")";
+    }
+
     // TOOL BAR
     private void CreateToolbar() {
         JToolBar toolbar = new JToolBar();
@@ -204,7 +226,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         toolbar.setRollover(true);
         toolbar.setLayout(new BorderLayout());
 
-        statusLabel = new JLabel("Current Status: " + currentShape.toString());
+        statusLabel = new JLabel("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         toolbar.add(statusLabel, BorderLayout.WEST);
 
         JPanel buttonPanel = new JPanel();
@@ -225,7 +247,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JButton LineButton = new JButton("Line");
         LineButton.addActionListener(e -> {
             currentShape = DrawingShape.LINE;
-            statusLabel.setText("Current shape: " + currentShape.toString());
+            statusLabel.setText("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         });
         buttonPanel.add(LineButton);
 
@@ -234,7 +256,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JButton CircleButton = new JButton("Circle");
         CircleButton.addActionListener(e -> {
             currentShape = DrawingShape.CIRCLE;
-            statusLabel.setText("Current shape: " + currentShape.toString());
+            statusLabel.setText("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         });
         buttonPanel.add(CircleButton);
 
@@ -243,7 +265,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JButton ovalButton = new JButton("Oval");
         ovalButton.addActionListener(e -> {
             currentShape = DrawingShape.OVAL;
-            statusLabel.setText("Current shape: " + currentShape.toString());
+            statusLabel.setText("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         });        
         buttonPanel.add(ovalButton);
         // toolbar.addSeparator();
@@ -251,7 +273,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         JButton RectangleButton = new JButton("Rectangle");
         RectangleButton.addActionListener(e -> {
             currentShape = DrawingShape.RECTANGLE;
-            statusLabel.setText("Current shape: " + currentShape.toString());
+            statusLabel.setText("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         });
         buttonPanel.add(RectangleButton);
 
@@ -260,10 +282,18 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         frame.getContentPane().add(toolbar, BorderLayout.NORTH);
     }
 
+    private void setCurrentColorStatus(Color color) {
+        currentColor = color;
+        statusLabel.setText("Current shape: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
+    }
+
     // COLOR CHOOSER
     private void CreateColorChooser() {
         JPanel colorPanel = new JPanel();
-        Color[] colors = {Color.BLACK, Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.GREEN, Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW};
+        Color Purple = new Color(128, 0, 128);
+        Color Teal = new Color(0, 128, 128);
+        Color Olive = new Color(128, 128, 0);
+        Color[] colors = {Color.BLACK, Color.BLUE, Color.CYAN, Color.DARK_GRAY, Color.GRAY, Color.GREEN, Color.LIGHT_GRAY, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.WHITE, Color.YELLOW, Purple, Teal, Olive};
 
         for (Color color : colors) {
             JButton colorButton = new JButton();
@@ -276,6 +306,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             colorButton.addActionListener(e -> {
                 try {
                     setCurrentColor(color);
+                    setCurrentColorStatus(color);
+                    
                 } catch (RemoteException remoteException) {
                     remoteException.printStackTrace();
                 }
@@ -291,7 +323,10 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     }
 
     @Override
-    public void draw(Shape shape, Color color) throws RemoteException {
+    public void draw(ColoredShape coloredShape) throws RemoteException {
+        Shape shape = coloredShape.getShape();
+        Color color = coloredShape.getColor();
+    
         if (shape instanceof Line2D) {
             Line2D line = (Line2D) shape;
             graphics.setColor(color);
@@ -312,18 +347,20 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         }
         panel.repaint();
     }
+    
 
     @Override
-    public void renderDrawings(CopyOnWriteArrayList<Shape> drawings) throws RemoteException {
+    public void renderDrawings(CopyOnWriteArrayList<ColoredShape> drawings) throws RemoteException {
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
-        for (Shape l : drawings) {
-            graphics.setColor(currentColor);
-            graphics.draw(l);
+        
+        for (ColoredShape coloredShape : drawings) {
+            draw(coloredShape);
         }
+        
         panel.repaint();
     }
-
+    
     
 
     @Override

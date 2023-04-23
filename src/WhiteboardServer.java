@@ -2,7 +2,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.awt.Shape;
 import java.awt.geom.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.*;
@@ -14,7 +13,7 @@ import javax.swing.event.ListSelectionListener;
 public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardServerInterface {
 
     private CopyOnWriteArrayList<WhiteboardClientInterface> clients;
-    private CopyOnWriteArrayList<Shape> drawings;
+    private CopyOnWriteArrayList<ColoredShape> drawings;
     DefaultListModel<String> listModel = new DefaultListModel<>();
     private int clientId = 0;
 
@@ -114,9 +113,10 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawLine(int x1, int y1, int x2, int y2, int color) throws RemoteException {
         Line2D line = new Line2D.Double(x1, y1, x2, y2);
-        drawings.add(line);
+        ColoredShape coloredLine = new ColoredShape(line, new Color(color));
+        drawings.add(coloredLine);
         for (WhiteboardClientInterface client : clients) {
-            client.draw(line, new Color(color));
+            client.draw(coloredLine);
             client.renderDrawings(drawings);
         }
     }
@@ -124,9 +124,10 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawCircle(int x, int y, int diameter, int color) throws RemoteException {
         Ellipse2D circle = new Ellipse2D.Double(x, y, diameter, diameter);
-        drawings.add(circle);
+        ColoredShape coloredCircle = new ColoredShape(circle, new Color(color));
+        drawings.add(coloredCircle);
         for (WhiteboardClientInterface client : clients) {
-            client.draw(circle, new Color(color));
+            client.draw(coloredCircle);
             client.renderDrawings(drawings);
         }
     }
@@ -134,9 +135,10 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawOval(int x, int y, int width, int height, int color) throws RemoteException {
         Ellipse2D oval = new Ellipse2D.Double(x, y, width, height);
-        drawings.add(oval);
+        ColoredShape coloredOval = new ColoredShape(oval, new Color(color));
+        drawings.add(coloredOval);
         for (WhiteboardClientInterface client : clients) {
-            client.draw(oval, new Color(color));
+            client.draw(coloredOval);
             client.renderDrawings(drawings);
         }
     }
@@ -144,15 +146,16 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawRectangle(int x, int y, int width, int height, int color) throws RemoteException {
         Rectangle2D rectangle = new Rectangle2D.Double(x, y, width, height);
-        drawings.add(rectangle);
+        ColoredShape coloredRectangle = new ColoredShape(rectangle, new Color(color));
+        drawings.add(coloredRectangle);
         for (WhiteboardClientInterface client : clients) {
-            client.draw(rectangle, new Color(color));
+            client.draw(coloredRectangle);
             client.renderDrawings(drawings);
         }
     }
     
     @Override
-    public CopyOnWriteArrayList<Shape> getDrawings() throws RemoteException {
+    public CopyOnWriteArrayList<ColoredShape> getDrawings() throws RemoteException {
         return drawings;
     }
     
@@ -173,7 +176,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     }
 
     private void checkClientsStatus() {
-        Timer timer = new Timer(500, e -> {
+        Timer timer = new Timer(5, e -> {
             for (int i = 0; i < clients.size(); i++) {
                 WhiteboardClientInterface client = clients.get(i);
                 try {
