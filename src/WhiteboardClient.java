@@ -1,4 +1,4 @@
-package client;
+
 
 import java.awt.Color;
 import java.awt.Shape;
@@ -16,8 +16,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import javax.swing.*;
-
-import server.WhiteboardServerInterface;
 
 import java.awt.*;
 import java.util.concurrent.CopyOnWriteArrayList;

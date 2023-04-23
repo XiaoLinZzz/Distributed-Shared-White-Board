@@ -1,10 +1,7 @@
-package server;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import client.ColoredShape;
-import client.WhiteboardClientInterface;
 
 public interface WhiteboardServerInterface extends Remote {
     void addClient(WhiteboardClientInterface client) throws RemoteException;
