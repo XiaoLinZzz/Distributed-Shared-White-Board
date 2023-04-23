@@ -6,3 +6,4 @@
 - [x]: debug (some client exit by themself, server do not update the client list)
 - [x]: chat function
 - []: A “File” menu with new, open, save, saveAs and close
+- []: debug (text input)
