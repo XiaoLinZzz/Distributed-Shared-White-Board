@@ -24,20 +24,20 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         chat = new CopyOnWriteArrayList<>();
     }
 
-    public void start(int serverPort) {
+    public void start(int serverPort, String userName) {
         try {
             Registry registry = LocateRegistry.createRegistry(serverPort);
             registry.bind("WhiteboardServer", this);
             System.out.println("Server started");
-            createServerGUI();
+            createServerGUI(userName);
             checkClientsStatus();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void createServerGUI() {
-        JFrame serverFrame = new JFrame("Whiteboard Server");
+    private void createServerGUI(String userName) {
+        JFrame serverFrame = new JFrame("Whiteboard Server" + " - hosted by " + userName);
         serverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         serverFrame.setLayout(new BorderLayout());
     
@@ -128,7 +128,8 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
 
     @Override
     public void broadcastDrawText(String text, int x, int y, int color) throws RemoteException {
-        Text2D text2D = new Text2D(text, x, y);
+        Font font = new Font("Arial", Font.PLAIN, 20); 
+        Text2D text2D = new Text2D(text, x, y, new Color(color), font);
         ColoredShape coloredText = new ColoredShape(text2D, new Color(color));
         coloredText.setText(text);
         drawings.add(coloredText);
@@ -229,19 +230,6 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         timer.setInitialDelay(0);
         timer.start();
     }
-    
-    // @Override
-    // public void broadcastChatMessage(String message) throws RemoteException {
-    //     System.out.println("Broadcasting chat message: " + message);
-
-    //     for (WhiteboardClientInterface client : clients) {
-    //         try {
-    //             client.receiveChatMessage(message);
-    //         } catch (RemoteException e) {
-    //             e.printStackTrace();
-    //         }
-    //     }
-    // }
 
     @Override
     public void addChatMessage(String userName, String message) throws RemoteException {
@@ -269,7 +257,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         try {
             WhiteboardServer server = new WhiteboardServer(serverIPAddress, port, userName);
             System.out.println("Whiteboard server is running...");
-            server.start(port);
+            server.start(port, userName);
         } catch (Exception e) {
             e.printStackTrace();
         }
