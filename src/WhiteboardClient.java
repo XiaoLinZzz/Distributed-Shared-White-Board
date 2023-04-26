@@ -348,15 +348,12 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
         buttonPanel.add(CircleButton);
 
-        // toolbar.addSeparator();
-
         JButton ovalButton = new JButton("Oval");
         ovalButton.addActionListener(e -> {
             currentShape = DrawingShape.OVAL;
             statusLabel.setText("Current Status: " + currentShape.toString() + " | Current Color: " + colorToString(currentColor));
         });        
         buttonPanel.add(ovalButton);
-        // toolbar.addSeparator();
 
         JButton RectangleButton = new JButton("Rectangle");
         RectangleButton.addActionListener(e -> {
@@ -380,9 +377,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         buttonPanel.add(textToggleButton);
 
         toolbar.add(buttonPanel, BorderLayout.CENTER);
-
         frame.getContentPane().add(toolbar, BorderLayout.NORTH);
-
         return toolbar;
     }
 
