@@ -259,10 +259,17 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         });
     } 
 
+    class BottomScrollingTextArea extends JTextArea {
+        @Override
+        public void append(String str) {
+            super.append(str);
+            setCaretPosition(getDocument().getLength());
+        }
+    }
 
     // CHAT
     private void createChat() {
-        chatArea = new JTextArea();
+        chatArea = new BottomScrollingTextArea();
         chatArea.setEditable(false);
         chatArea.setLineWrap(true);
         chatArea.setWrapStyleWord(true);
@@ -272,7 +279,6 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
         JLabel chatTitle = new JLabel("Chat Room");
         chatTitle.setHorizontalAlignment(SwingConstants.CENTER);
-        // chatTitle.setFont(new Font("Tahoma", Font.BOLD, 14));
 
         JButton sendButton = new JButton("Send");
         sendButton.addActionListener(new ActionListener() {
@@ -281,7 +287,6 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 sendMessage();
             }
         });
-    
 
         chatField.addActionListener(new ActionListener() {
             @Override
@@ -294,14 +299,16 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         chatPanel.setLayout(new BorderLayout());
         chatPanel.add(chatTitle, BorderLayout.NORTH);
         chatPanel.add(chatAreaScrollPane, BorderLayout.CENTER);
-    
+
         // Create a panel for the chat field and send button
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(chatField, BorderLayout.CENTER);
         bottomPanel.add(sendButton, BorderLayout.EAST);
-    
+
         chatPanel.add(bottomPanel, BorderLayout.SOUTH);
     }
+
+    
 
     @Override
     public void setCurrentColor(Color color) throws RemoteException {
@@ -378,6 +385,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
         toolbar.add(buttonPanel, BorderLayout.CENTER);
         frame.getContentPane().add(toolbar, BorderLayout.NORTH);
+
         return toolbar;
     }
 
@@ -535,6 +543,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 for (String message : messages) {
                     chatArea.append(message + "\n");
                 }
+                // chatArea.setCaretPosition(chatArea.getDocument().getLength());
             }
         });
     }
