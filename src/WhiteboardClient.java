@@ -59,9 +59,12 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         try {
             Registry registry = LocateRegistry.getRegistry(serverIPAddress, serverPort);
             server = (WhiteboardServerInterface) registry.lookup("WhiteboardServer");
-
+            
+            System.out.print("Trying to connect to server... \n");
             boolean connectionAllowed = server.requestConnection(userName);
+
             if (connectionAllowed) {
+                System.out.println("Connection allowed");
                 server.addClient(this, userName);
             } else {
                 JOptionPane.showMessageDialog(null, "Connection not allowed");
@@ -101,7 +104,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 }
             }
         };
-        panel.setPreferredSize(new java.awt.Dimension(850, 400));
+        panel.setPreferredSize(new java.awt.Dimension(870, 400));
 
         JPanel drawingPanel = new JPanel();
         drawingPanel.setLayout(new BoxLayout(drawingPanel, BoxLayout.Y_AXIS));
@@ -113,7 +116,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
         // splitPane.setResizeWeight(0.75);
-        splitPane.setDividerLocation(700);
+        splitPane.setDividerLocation(720);
         frame.setContentPane(splitPane);
         frame.pack();
         frame.setVisible(true);
@@ -133,13 +136,24 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (!serverRunning || currentShape == null) {
+                if (!serverRunning) {
                     return;
                 }
             
                 startX = e.getX();
                 startY = e.getY();
                 drawing = true;
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (textInputMode) {                    
+                    startX = e.getX();
+                    startY = e.getY();
+                    drawing = true;
+                    // requestFocusInWindow();
+                    // String text = JOptionPane.showInputDialog("Enter text");
+                }
             }
             
 
@@ -190,9 +204,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
-                if (!serverRunning || !textInputMode) {
-                    return;
-                } else {
+                if (textInputMode) {
                     String text = String.valueOf(e.getKeyChar());
                     // JOptionPane.showMessageDialog(null, "Text input mode. Press enter to send message.");
                     Font currentFont = new Font("Arial", Font.PLAIN, 20);
@@ -211,7 +223,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         panel.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                if (currentShape == DrawingShape.TEXT) {
+                if (textInputMode || !serverRunning) {
                     return;
                 }
 
@@ -456,7 +468,6 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             graphics.drawRect((int) rectangle.getX(), (int) rectangle.getY(), (int) rectangle.getWidth(), (int) rectangle.getHeight());
         } else if (shape instanceof Text2D) {
             Text2D text = (Text2D) shape;
-            graphics = image.createGraphics();
             graphics.setColor(color);
             graphics.setFont(text.getFont());
             graphics.drawString(text.getText(), (int) text.getX(), (int) text.getY());

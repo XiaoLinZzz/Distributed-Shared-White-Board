@@ -12,6 +12,7 @@ public class Text2D extends Rectangle2D.Double {
         super(x, y, 0, 0);
         this.text = text;
         this.color = color;
+        this.font = font;
     }
 
     public String getText() {

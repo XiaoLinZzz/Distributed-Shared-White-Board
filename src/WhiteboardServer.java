@@ -131,7 +131,6 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         Font font = new Font("Arial", Font.PLAIN, 20); 
         Text2D text2D = new Text2D(text, x, y, new Color(color), font);
         ColoredShape coloredText = new ColoredShape(text2D, new Color(color));
-        coloredText.setText(text);
         drawings.add(coloredText);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredText);
