@@ -8,7 +8,7 @@ public class Text2D extends Rectangle2D.Double {
     private Color color;
     private Font font;
 
-    public Text2D(String text, int x, int y, Color color, Font Font) {
+    public Text2D(String text, int x, int y, Color color, Font font) {
         super(x, y, 0, 0);
         this.text = text;
         this.color = color;

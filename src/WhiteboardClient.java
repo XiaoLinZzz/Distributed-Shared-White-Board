@@ -151,8 +151,6 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                     startX = e.getX();
                     startY = e.getY();
                     drawing = true;
-                    // requestFocusInWindow();
-                    // String text = JOptionPane.showInputDialog("Enter text");
                 }
             }
             
