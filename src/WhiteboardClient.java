@@ -34,6 +34,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
     private String userName;
     private boolean textInputMode = false;
     private boolean serverRunning = true;
+    // private String currentText = "";
     
 
     public enum DrawingShape {
@@ -48,7 +49,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         super();
         this.userName = userName;
 
-        image = new BufferedImage(690, 400, BufferedImage.TYPE_INT_RGB);
+        image = new BufferedImage(850, 400, BufferedImage.TYPE_INT_RGB);
         graphics = (Graphics2D) image.getGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setColor(Color.WHITE);
@@ -102,9 +103,31 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                     g2d.setColor(currentColor);
                     g2d.draw(tempShape);
                 }
+
+                // if (textInputMode && !currentText.isEmpty()) {
+                //     g2d.setColor(currentColor);
+                //     g2d.drawString(currentText, startX, startY);
+                // }
+
+
+                try {
+                    for (ColoredShape shape : server.getDrawings()) {
+                        g2d.setColor(shape.getColor());
+        
+                        if (shape.getShape() instanceof Text2D) {
+                            Text2D text2D = (Text2D) shape.getShape();
+                            g2d.setFont(text2D.getFont());
+                            g2d.drawString(text2D.getText(), (float)text2D.getX(), (float)text2D.getY());
+                        } else {
+                            g2d.draw(shape.getShape());
+                        }
+                    }
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         };
-        panel.setPreferredSize(new java.awt.Dimension(870, 400));
+        panel.setPreferredSize(new java.awt.Dimension(1000, 400));
 
         JPanel drawingPanel = new JPanel();
         drawingPanel.setLayout(new BoxLayout(drawingPanel, BoxLayout.Y_AXIS));
@@ -116,7 +139,7 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
         
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, drawingPanel, chatPanel);
         // splitPane.setResizeWeight(0.75);
-        splitPane.setDividerLocation(720);
+        splitPane.setDividerLocation(850);
         frame.setContentPane(splitPane);
         frame.pack();
         frame.setVisible(true);
@@ -133,9 +156,15 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             e.printStackTrace();
         }
 
+        
+        panel.setFocusable(true);
+        panel.requestFocusInWindow();
+
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
+                panel.requestFocusInWindow();
+
                 if (!serverRunning) {
                     return;
                 }
@@ -147,6 +176,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
 
             @Override
             public void mouseClicked(MouseEvent e) {
+                panel.requestFocusInWindow();
+
                 if (textInputMode) {                    
                     startX = e.getX();
                     startY = e.getY();
@@ -198,14 +229,19 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
                 panel.repaint();
             }
         });
-           
+
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyTyped(KeyEvent e) {
                 if (textInputMode) {
-                    String text = String.valueOf(e.getKeyChar());
-                    // JOptionPane.showMessageDialog(null, "Text input mode. Press enter to send message.");
+                    String text = Character.toString(e.getKeyChar());
                     Font currentFont = new Font("Arial", Font.PLAIN, 20);
+                    
+                    // System.out.println("Text: " + text);
+                    // System.out.println("startX: " + startX);
+                    // System.out.println("startY: " + startY);
+                    // System.out.println("Color: " + currentColor.getRGB());
+
                     try {
                         server.broadcastDrawText(text, startX, startY, currentColor.getRGB());
                         startX += graphics.getFontMetrics(currentFont).stringWidth(text);
@@ -464,6 +500,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             Rectangle2D rectangle = (Rectangle2D) shape;
             graphics.setColor(color);
             graphics.drawRect((int) rectangle.getX(), (int) rectangle.getY(), (int) rectangle.getWidth(), (int) rectangle.getHeight());
+
+            // System.out.println("Drawing rectangle: " + rectangle.getX() + ", " + rectangle.getY() + ", " + rectangle.getWidth() + ", " + rectangle.getHeight());
         } else if (shape instanceof Text2D) {
             Text2D text = (Text2D) shape;
             graphics.setColor(color);

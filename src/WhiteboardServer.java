@@ -3,11 +3,17 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.awt.geom.*;
+import java.io.File;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.*;
 import java.awt.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import java.io.ObjectInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.*;
+
 
 
 public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardServerInterface {
@@ -16,7 +22,8 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     private CopyOnWriteArrayList<ColoredShape> drawings;
     private CopyOnWriteArrayList<String> chat;
     DefaultListModel<String> listModel = new DefaultListModel<>();
-
+    private File currentFile;
+    private String hostUserName;
 
     public WhiteboardServer(String serverIPAddress, int serverPort, String userName) throws RemoteException {
         clients = new CopyOnWriteArrayList<>();
@@ -26,10 +33,15 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
 
     public void start(int serverPort, String userName) {
         try {
+            this.hostUserName = userName;
             Registry registry = LocateRegistry.createRegistry(serverPort);
             registry.bind("WhiteboardServer", this);
             System.out.println("Server started");
             createServerGUI(userName);
+
+            WhiteboardClient client = new WhiteboardClient("localhost", serverPort, userName);
+            client.start("localhost", serverPort);
+
             checkClientsStatus();
         } catch (Exception e) {
             e.printStackTrace();
@@ -37,9 +49,153 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     }
 
     private void createServerGUI(String userName) {
-        JFrame serverFrame = new JFrame("Whiteboard Server" + " - hosted by " + userName);
+        JFrame serverFrame = new JFrame("Whiteboard Server" + " - " + userName);
         serverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         serverFrame.setLayout(new BorderLayout());
+
+        JMenuBar menuBar = new JMenuBar();
+
+        //Build the file menu.
+        JMenu menu = new JMenu("File");
+        menuBar.add(menu);
+    
+        JMenuItem menuItem = new JMenuItem("New");
+        menuItem.addActionListener(e -> { 
+            // Clear the current file
+            currentFile = null;
+            serverFrame.setTitle(userName);
+            drawings.clear();
+            // System.out.println("New file created");
+            JOptionPane.showMessageDialog(serverFrame, "New file created");
+
+            for (WhiteboardClientInterface client : clients) {
+                try {
+                    client.renderDrawings(drawings);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        menu.add(menuItem);
+    
+        menuItem = new JMenuItem("Open");
+        menuItem.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            int returnValue = fileChooser.showOpenDialog(serverFrame);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                currentFile = fileChooser.getSelectedFile();
+                serverFrame.setTitle(userName + " - " + currentFile.getName());
+            
+                try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(currentFile))) {
+                    drawings.clear();  // clear the previous drawings
+                    while (true) {
+                        try {
+                            ColoredShape drawing = (ColoredShape) ois.readObject();
+                            drawings.add(drawing);
+                        } catch (EOFException ex) {
+                            // We've reached the end of the file, break the loop
+                            break;
+                        }
+                    }
+                    JOptionPane.showMessageDialog(serverFrame, "File opened successfully");
+                    
+                    // Now inform all clients about the new drawings
+                    for (WhiteboardClientInterface client : clients) {
+                        try {
+                            client.renderDrawings(drawings);
+                        } catch (RemoteException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                } catch (IOException | ClassNotFoundException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        menu.add(menuItem);
+        
+        
+        
+    
+        menuItem = new JMenuItem("Save");
+        menuItem.addActionListener(e -> {
+            if (currentFile == null) {
+                // If no file is currently opened, show "Save As" dialog
+                JFileChooser fileChooser = new JFileChooser();
+                int returnValue = fileChooser.showSaveDialog(serverFrame);
+                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                    currentFile = fileChooser.getSelectedFile();
+                    serverFrame.setTitle(userName + " - " + currentFile.getName());
+                    // System.out.println("Saving to " + currentFile.getName());
+                    JOptionPane.showMessageDialog(serverFrame, "Saving to " + currentFile.getName());
+                } else {
+                    // User did not select a file, abort save operation
+                    // System.out.println("Save aborted");
+                    JOptionPane.showMessageDialog(serverFrame, "Save aborted");
+                    return;
+                }
+            }
+            // Save the state to the current file
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(currentFile))) {
+                for (ColoredShape drawing : drawings) {
+                    oos.writeObject(drawing);
+                }
+                // System.out.println(currentFile.getName() + " saved successfully");
+                JOptionPane.showMessageDialog(serverFrame, "File saved successfully");
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+        menu.add(menuItem);
+        
+        
+    
+        menuItem = new JMenuItem("Save As");
+        menuItem.addActionListener(e -> {
+            // Show "Save As" dialog
+            JFileChooser fileChooser = new JFileChooser();
+            int returnValue = fileChooser.showSaveDialog(serverFrame);
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+                currentFile = fileChooser.getSelectedFile();
+                serverFrame.setTitle(userName + " - " + currentFile.getName());
+        
+                // Save the state to the selected file
+                try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(currentFile))) {
+                    for (ColoredShape drawing : drawings) {
+                        oos.writeObject(drawing);
+                    }
+                    // System.out.println(currentFile.getName() + " saved successfully");
+                    JOptionPane.showMessageDialog(serverFrame, "File saved successfully");
+                    
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        menu.add(menuItem);
+        
+    
+        menuItem = new JMenuItem("Close");
+        menuItem.addActionListener(e -> {
+            // Close the current file
+            currentFile = null;
+            serverFrame.setTitle(userName);
+            drawings.clear();
+            // System.out.println("File closed");
+            JOptionPane.showMessageDialog(serverFrame, "File closed");
+
+            for (WhiteboardClientInterface client : clients) {
+                try {
+                    client.renderDrawings(drawings);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        menu.add(menuItem);
+    
+        serverFrame.setJMenuBar(menuBar);
+    
     
         JList<String> clientList = new JList<>(listModel);
         JScrollPane scrollPane = new JScrollPane(clientList);
@@ -105,8 +261,13 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
 
     @Override
     public boolean requestConnection(String userName) throws RemoteException {
-        return displayConnectionRequest(userName);
+        if(userName.equals(hostUserName)) {
+            return true;
+        } else {
+            return displayConnectionRequest(userName);
+        }
     }
+    
 
     @Override
     public void addClient(WhiteboardClientInterface client, String userName) throws RemoteException {
@@ -130,7 +291,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     public void broadcastDrawText(String text, int x, int y, int color) throws RemoteException {
         Font font = new Font("Arial", Font.PLAIN, 20); 
         Text2D text2D = new Text2D(text, x, y, new Color(color), font);
-        ColoredShape coloredText = new ColoredShape(text2D, new Color(color));
+        ColoredShape coloredText = new ColoredShape(text2D, new Color(color), text);
         drawings.add(coloredText);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredText);
@@ -142,7 +303,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawLine(int x1, int y1, int x2, int y2, int color) throws RemoteException {
         Line2D line = new Line2D.Double(x1, y1, x2, y2);
-        ColoredShape coloredLine = new ColoredShape(line, new Color(color));
+        ColoredShape coloredLine = new ColoredShape(line, new Color(color), null);
         drawings.add(coloredLine);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredLine);
@@ -153,7 +314,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawCircle(int x, int y, int diameter, int color) throws RemoteException {
         Ellipse2D circle = new Ellipse2D.Double(x, y, diameter, diameter);
-        ColoredShape coloredCircle = new ColoredShape(circle, new Color(color));
+        ColoredShape coloredCircle = new ColoredShape(circle, new Color(color), null);
         drawings.add(coloredCircle);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredCircle);
@@ -164,7 +325,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawOval(int x, int y, int width, int height, int color) throws RemoteException {
         Ellipse2D oval = new Ellipse2D.Double(x, y, width, height);
-        ColoredShape coloredOval = new ColoredShape(oval, new Color(color));
+        ColoredShape coloredOval = new ColoredShape(oval, new Color(color), null);
         drawings.add(coloredOval);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredOval);
@@ -175,7 +336,7 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
     @Override
     public void broadcastDrawRectangle(int x, int y, int width, int height, int color) throws RemoteException {
         Rectangle2D rectangle = new Rectangle2D.Double(x, y, width, height);
-        ColoredShape coloredRectangle = new ColoredShape(rectangle, new Color(color));
+        ColoredShape coloredRectangle = new ColoredShape(rectangle, new Color(color), null);
         drawings.add(coloredRectangle);
         for (WhiteboardClientInterface client : clients) {
             client.draw(coloredRectangle);
@@ -243,6 +404,15 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
         }
     }
 
+    public void printAllDrawingTexts() {
+        for (ColoredShape drawing : drawings) {
+            if (drawing.getText() != null) {
+                System.out.println("Drawing Text: " + drawing.getText());
+            }
+        }
+    }
+    
+
     public static void main(String[] args) {
         if (args.length < 3) {
             System.out.println("Usage: java CreateWhiteBoard <serverIPAddress> <port> <username>");
@@ -257,6 +427,11 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             WhiteboardServer server = new WhiteboardServer(serverIPAddress, port, userName);
             System.out.println("Whiteboard server is running...");
             server.start(port, userName);
+
+            // test broadcastDrawText
+            // server.broadcastDrawText("Test text", 50, 50, Color.BLACK.getRGB());
+
+            server.printAllDrawingTexts();
         } catch (Exception e) {
             e.printStackTrace();
         }

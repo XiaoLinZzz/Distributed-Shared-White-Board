@@ -9,10 +9,10 @@ public class ColoredShape implements Serializable {
     private Color color;
     private String text;
 
-    public ColoredShape(Shape shape, Color color) {
+    public ColoredShape(Shape shape, Color color, String text) {
         this.shape = shape;
         this.color = color;
-        this.text = null;
+        this.text = text;
     }
 
     public Shape getShape() {
