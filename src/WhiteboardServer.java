@@ -13,7 +13,8 @@ import java.io.ObjectInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.*;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 
 public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardServerInterface {
@@ -393,8 +394,14 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
 
     @Override
     public void addChatMessage(String userName, String message) throws RemoteException {
-        System.out.println("Adding chat message: " + message);
-        chat.add(userName + ": " + message);
+        // Generate a timestamp for the message
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        String timeString = now.format(formatter);
+    
+        String fullMessage = "[" + timeString + "] " + userName + ": " + message;
+        System.out.println("Adding chat message: " + fullMessage);
+        chat.add(fullMessage);
         for (WhiteboardClientInterface client : clients) {
             try {
                 client.renderChatMessages(chat);
@@ -427,9 +434,6 @@ public class WhiteboardServer extends UnicastRemoteObject implements WhiteboardS
             WhiteboardServer server = new WhiteboardServer(serverIPAddress, port, userName);
             System.out.println("Whiteboard server is running...");
             server.start(port, userName);
-
-            // test broadcastDrawText
-            // server.broadcastDrawText("Test text", 50, 50, Color.BLACK.getRGB());
 
             server.printAllDrawingTexts();
         } catch (Exception e) {

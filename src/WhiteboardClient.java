@@ -594,12 +594,14 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             }
         });
     }
+    
+    
 
     private void sendMessage() {
         if (!serverRunning) {
             return;
         }
-
+    
         String message = chatField.getText().trim();
         if (!message.isEmpty()) {
             try {
@@ -610,6 +612,8 @@ public class WhiteboardClient extends UnicastRemoteObject implements WhiteboardC
             }
         }
     }
+    
+    
 
     private String colorToString(Color color) {
         if (color.equals(Color.BLACK)) return "Black";
