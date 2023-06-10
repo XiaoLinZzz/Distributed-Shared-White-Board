@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Distributed-Shared-White-Board">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/CreateWhiteBoard.jar!/" />
+      <root url="jar://$PROJECT_DIR$/JoinWhiteBoard.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
