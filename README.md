@@ -34,8 +34,46 @@ Remote Method Invocation (RMI) is adopted to keep the real-time, efficient, and 
 
 ## How to compile and Run
 
+### Compile
+1. Compile the server and client files using the following command:
+```shell
+cd src
 
-## Usage
+javac WhiteboardClient.java
+javac WhiteboardServer.java
+```
+
+2. Run the server with the following command:
+
+   (the command should follow the format: java WhiteboardServer <host> <port> <username>)
+```shell
+java WhiteboardServer localhost 1099 Tom
+```
+
+3. Run the client with the following command:
+
+   (the command should follow the format: java WhiteboardClient <host> <port> <username>)
+
+    Note: The client should get the same `host` and `port` with the server.
+```shell
+java WhiteboardClient localhost 1099 Jerry
+```
+
+### Or
+
+We also provide `Jar` file, you can run the server and client with the following command:
+
+Note: The client should get the same `host` and `port` with the server.
+
+For the server:
+```shell [server]
+java -jar CreateWhiteBoard.jar localhost 1099 Tom
+```
+
+For the client:
+```shell [client]
+java -jar JoinWhiteBoard.jar localhost 1099 Tom
+```
 
 
 ## Interaction Diagram
@@ -45,3 +83,6 @@ Remote Method Invocation (RMI) is adopted to keep the real-time, efficient, and 
 
 ## Report
 You can check the report in the [Report.pdf](DS_A2_report.pdf)
+
+## License
+This project is open-source and free to use under the [MIT License](LICENSE).
